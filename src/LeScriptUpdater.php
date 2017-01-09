@@ -53,7 +53,7 @@ class LeScriptUpdater
     {
     	$valid_domains = null;
 
-    	if ($this->validateDomains())
+    	if (!$this->validateDomains())
     	{
     		return null;
     	}
@@ -134,6 +134,15 @@ class LeScriptUpdater
     	$logger = new Logger();
 
     	$valid_domains = $this->getValidDomains();
+
+    	if (!$valid_domains)
+    	{
+
+    		throw new \Exception('getValidDomains() returned null');
+
+    		return false;
+
+    	}
 
     	foreach ($valid_domains as $domain => $data)
     	{	
@@ -253,8 +262,8 @@ class LeScriptUpdater
 
     		$cert_location = $data['cert_location'];
     		$web_root = $data['web_root'];
-    		$certificate = file_get_contents("$cert_location/cert.pem");
-			$private_key = file_get_contents("$cert_location/private.pem");
+    		$certificate = file_get_contents("$cert_location/$domain/cert.pem");
+			$private_key = file_get_contents("$cert_location/$domain/private.pem");
 			$certificate_name = $data['certificate_name'];
 			
 
@@ -273,7 +282,7 @@ class LeScriptUpdater
 
 			# Method we are calling and its arguments
 
-			$token_request = new XmlRpc\MethodCall('login', [$profile_data['wf_username'], $profile_data['wf_password'], $profile_data['wf_username'], 2]);
+			$token_request = new XmlRpc\MethodCall('login', [$profile_data['wf_username'], $profile_data['wf_password'], $profile_data['wf_machine_name'], 2]);
 
 
 			# Perform request over HTTP
@@ -287,11 +296,43 @@ class LeScriptUpdater
 
 			$token_response = file_get_contents('https://api.webfaction.com/', FALSE, $token_context);
 
-			$token = $token_response[0];
+			//$token = $token_response[0];
+
+			# XML response parsing
+			$converted_response = $converter->fromXml($token_response);
+			
+			if (!$converted_response instanceof XmlRpc\MethodResponse) {
+			    throw new Exception('Expected method response. Got ' . get_class($token_response));
+			}
+
+			# Returned value
+			#dump($converted_response->getReturnValue());
+
+			$token = $converted_response[0];
 
 			/*add more error checking here*/
 
 			$cert_update_request = new XmlRpc\MethodCall('update_certificate', [$token, $certificate_name, $certificate, $private_key]);
+
+			# Perform request over HTTP
+			$update_certificate_context = stream_context_create([
+			    'http' => array(
+			        'method' => 'POST',
+			        'header' => 'Content-type: text/xml',
+			        'content' => $converter->toXml($cert_update_request),
+			    ),
+			]);
+
+			$update_certificate_response = file_get_contents('https://api.webfaction.com/', FALSE, $update_certificate_context);
+
+			# XML response parsing
+			$converted_uc_response = $converter->fromXml($update_certificate_response);
+			
+			if (!$converted_uc_response instanceof XmlRpc\MethodResponse) {
+			    throw new Exception('Expected method response. Got ' . get_class($converted_uc_response));
+			}
+
+			dump($converted_uc_response);
 
     	}
 
