@@ -1,0 +1,16 @@
+{
+    "require": {
+        "analogic/lescript": "^0.1.4",
+        "hassankhan/config": "^0.10.0",
+        "symfony/yaml": "^3.2",
+        "symfony/var-dumper": "^3.2",
+        "symfony/console": "^3.2",
+        "milo/xml-rpc": "^1.0"
+    },
+    "autoload": {
+      "psr-4": {
+            "Frontiernxt\\": "src/"
+        }
+    }
+
+}

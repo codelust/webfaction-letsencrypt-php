@@ -1,0 +1,12 @@
+profiles:
+ web474:
+  wf_username:
+  wf_password:
+  wf_machine_name:
+domains:
+ example.com:
+  profile: web474
+  active: false
+  web_root:
+  cert_location:
+  certificate_name:
